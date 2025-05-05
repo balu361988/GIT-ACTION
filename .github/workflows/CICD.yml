@@ -38,10 +38,10 @@ jobs:
         sudo apt-get install -y trivy
 
     - name: Trivy Filesystem Scan
-      run: trivy fs --format table -o fs-report.json .
+      run: trivy fs --format table -o fs-report.txt .
 
     - name: Install Gitleaks
       run: sudo apt-get install -y gitleaks
 
     - name: Gitleaks Code Scan
-      run: gitleaks detect --source . --report-path=gitleaks-report.json --format=json
+      run: gitleaks detect --source . --report-path=gitleaks-report.json --report-format=json
