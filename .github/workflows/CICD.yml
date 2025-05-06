@@ -79,17 +79,31 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-      - name: Install jq (required for SonarQube Quality Gate)
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Wait for apt lock and install jq
+        run: |
+            echo "Checking for apt lock..."
+            while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+            echo "Waiting for other apt process to finish..."
+            sleep 2
+            done
 
-      - name: SonarQube Quality Gate check
-        id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        with:
-          pollingTimeoutSec: 600
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+            echo "Cleaning up duplicate Trivy sources (if any)..."
+            sudo rm -f /etc/apt/sources.list.d/trivy.list
+            echo "deb [trusted=yes] https://aquasecurity.github.io/trivy-repo/deb stable main" | sudo tee /etc/apt/sources.list.d/trivy.list
+
+            echo "Running apt update and installing jq..."
+            sudo apt-get update
+            sudo apt-get install -y jq
+
+            - name: SonarQube Quality Gate check
+            id: sonarqube-quality-gate-check
+            uses: sonarsource/sonarqube-quality-gate-action@master
+            with:
+            pollingTimeoutSec: 600
+            env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
 
   builds_docker_image_and_push:
     runs-on: self-hosted
